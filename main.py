@@ -24,7 +24,6 @@ video_put_args.add_argument("views", type=int, help="Views of the video", requir
 video_put_args.add_argument("likes", type=int, help="Likes of the video", required=False)
 
 video_update_args = reqparse.RequestParser()
-video_update_args.add_arguments("")
 video_update_args.add_argument("likes", type=int, help="Likes of the video")
 video_update_args.add_argument("name", type=str, help="Name of the video is required")
 video_update_args.add_argument("views", type=int, help="Views of the video")
@@ -46,7 +45,7 @@ class Video(Resource):
 
     @marshal_with(resource_fields)
     def put(self, video_id):
-        args = video_put_args.parse_args()
+        args = video_update_args.parse_args()
         result = VideoModel.query.filter_by(id=video_id).first()
         if result:
             abort(409, message="Video id taken")
@@ -56,13 +55,22 @@ class Video(Resource):
         db.session.commit()
         return video, 201
 
+    @marshal_with(resource_fields)
     def patch(self, video_id):
-        args = video_put_args.parse_args()
+        args = video_update_args.parse_args()
         result = VideoModel.query.filter_by(id=video_id).first()
-        if result:
-            abort(409, message="Video does't exist, cannot update")
+        if not result:
+            abort(404, message="Video does't exist, cannot update")
+        if args['name']:
+            result.name = args['name']
+        if args['views']:
+            result.views = args['views']
+        if args['likes']:
+            result.likes = args['likes']
         
+        db.session.commit()
 
+        return result, 200
 
     # def delete(self, video_id):
     #     abort_if_video_doesnt_exist(video_id)
